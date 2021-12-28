@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        table,
+        tr,
+        td {
+            border: 1px solid rgb(219, 187, 187);
+            text-align: center;
+        }
+
+        td {
+            padding: 8px 12px;
+        }
+
+        span {
+            padding: 5px 8px;
+        }
+
+        input[type="text"] {
+            border: 0px;
+        }
+    </style>
+    <script src="https://unpkg.com/vue@next"></script>
+</head>
+
+<body>
+    <div id="app">
+        <table>
+            <tr>
+                <td v-for="(item,index) in data_title">
+                    <slot v-if="index != data_title.indexOf('⇉') && (item == 'Table' || item =='Set')">
+                        {{item}}
+                    </slot>
+                    <slot v-else-if="index == data_title.indexOf('⇉') ">
+                        <span @click='add_column(index)'>{{item}}</span>
+                    </slot>
+                    <slot v-else>
+                        <input type="text" v-model="item" @blur="save(index,item)">
+                        <span @click="remove_column(index)">✖</span>
+                    </slot>
+
+                </td>
+            </tr>
+            <tr v-for="(item,index) in data_arr">
+                <td>{{index+1}}</td>
+                <td v-for="(con,index_list) in item.list">
+                    <input type="text" v-model="con" @blur="save_con(index,index_list,con)">
+                </td>
+                <td @click='add_data(index)'>+</td>
+                <td>
+                    <span @click="moveforward(index)"><b>⇈</b></span>
+                    <span @click="moveback(index)"><b>⇊</b></span>
+                    <span @click="removeTr(index)">✖</span>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+</body>
+
+<script>
+    const {reactive, computed } = Vue;
+
+    const App = Vue.createApp({
+
+        setup() {
+            // 標題區
+            const data_title = reactive(['Table', 'list', '⇉', 'Set']);
+            // 資料結構
+            const data_arr = reactive([
+                {
+                    index_item: 0,
+                    list: ["編輯內容1"] 
+                }
+            ]);
+
+         
+
+            // 新增資料
+            const add_data = (index) => {
+                const data_temp = {
+                    index_item: data_arr.length, 
+                    list: []
+                }
+                for (let i = 0; i < data_title.indexOf('⇉') - 1; i++) {
+                    data_temp.list.push("")
+                }
+                data_arr.splice(index + 1, 0, data_temp)
+
+            }
+            // 新增標題
+            const add_column = (index) => {
+                data_title.splice(data_title.indexOf('⇉'), 0, "list")
+                data_arr.forEach(element => {
+                    element.list.push("");
+                })
+            }
+
+            // 打完字推到資料中
+            const save_con = (index, index_list, con) => {
+                data_arr[index].list[index_list] = con
+            }
+
+            // 打完字推到標題中
+            const save = (index, con) => {
+                data_title[index] = con;
+            }
+
+            // 往前
+            const moveforward = (index) => {
+                if (index != 0) {
+                    const change_data = data_arr[index];
+                    data_arr.splice(index - 1, 2, change_data, data_arr[index - 1])
+                }
+            }
+
+            // 往後
+            const moveback = (index) => {
+                if (index != data_arr.length - 1) {
+                    const change_data = data_arr[index];
+                    data_arr.splice(index, 2, data_arr[index + 1], change_data)
+                }
+            }
+            // 刪掉
+            const removeTr = (index) => {
+                if (data_arr.length > 1) {
+                    data_arr.splice(index, 1);
+                }
+            }
+
+            // 刪一整欄
+            const remove_column = (index) => {
+                data_title.splice(index, 1);
+                data_arr.forEach(element => {
+                    element.list.splice(index - 1, 1);
+                })
+
+
+            }
+
+            return {
+                data_title,
+                add_data,
+                add_column,
+                save_con,
+                save,
+                data_arr,
+                moveforward,
+                moveback,
+                removeTr,
+                remove_column
+
+            }
+        }
+    });
+
+
+
+    App.mount('#app')
+</script>
+
+</html>
