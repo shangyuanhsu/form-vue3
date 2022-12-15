@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/vue@3"></script>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,0,0" />
+    <title>voucher report</title>
+    <style>
+        section {
+            width: 88%;
+            margin: 50px auto;
+        }
+
+        .timeZone {
+            display: grid;
+            grid-template-columns: 220px 1fr 100px;
+        }
+
+        .timeZoneInput {
+            text-align: center;
+            display: grid;
+            grid-template-columns: 1fr 20px 1fr;
+        }
+
+        .timeZone div:last-child {
+            text-align: right;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .noSearch {
+            text-align: center;
+            color: gray;
+        }
+
+        .content>div {
+            margin: 0 0 50px 0;
+        }
+
+        table,
+        tr,
+        td {
+            border: 1px solid rgb(164, 164, 164);
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        .contentmainTitle {
+            position: relative;
+            background-color: #e7e7e7;
+        }
+
+        .contentmainTitle div:first-child {
+            font-size: 20px;
+            padding: 5px 0;
+        }
+
+        .contentmainTitle div:last-child {
+            position: absolute;
+            right: 20px;
+            top: 11px;
+            font-style: italic;
+            font-size: 10px;
+        }
+
+        .textR {
+            text-align: right;
+            padding-right: 20px;
+        }
+
+        .borderNone {
+            border: none;
+        }
+
+        .pointer {
+            cursor: pointer;
+        }
+
+        .optionsBtn {
+            width: 100%;
+            margin: 15px 0;
+            border: 0;
+            padding: 4px 0;
+            opacity: 0.6;
+            border-radius: 4px;
+        }
+
+        .optionsBtn:hover {
+            opacity: 1;
+
+        }
+
+        summary {
+            cursor: pointer;
+            margin: 8px 0;
+        }
+
+        details>div {
+            /* padding: 0 18px; */
+            text-align: justify;
+        }
+
+        .contentoptionsTable {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <section class="timeZone">
+            <div>{{timeTitle}} : </div>
+            <div class="timeZoneInput">
+                <input type="date" v-model="startDate"> ~ <input type="date" v-model="endDate">
+            </div>
+            <div><button @click="handleSearch">SEARCH</button></div>
+        </section>
+        <section class="content">
+            <p class="noSearch" v-if="!voucherData.data">please click "SEARCH" button</p>
+            <contentmain :voucherdata="voucherData.data" :contentmaintitle="contentMainTitle"
+                v-else="voucherData.data" />
+        </section>
+    </div>
+
+    <template id="contentmain">
+        <p>Customer's voucher balance : {{totalBalance}}</p>
+        <div v-for="(item, index) in allData.arr" :key="index">
+            <table>
+                <tr>
+                    <td class="contentmainTitle" colspan="7">
+                        <div>{{item.activeName}}</div>
+                        <div>Expiration date : {{item.enddatetime.split("T")[0]}}</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td v-for="(item, index) in optionsTitle.arr" :key="index">
+                        {{item}}
+                    </td>
+                </tr>
+                <tr v-for="(itemTicket, indexTicket) in item.ticketCategorys" :key="indexTicket">
+                    <td class="borderNone">{{itemTicket.money}}</td>
+                    <td class="borderNone">{{itemTicket.redeemNumber}}</td>
+                    <td class="borderNone">{{itemTicket.usedNumber}}</td>
+                    <td class="borderNone">{{itemTicket.canceledNumber}}</td>
+                    <td class="borderNone">{{itemTicket.expiredNumber}}</td>
+                    <td class="borderNone">{{itemTicket.passedNumber}}</td>
+                    <td class="borderNone">{{itemTicket.lessNumber}}</td>
+
+                </tr>
+                <tr>
+                    <td>exchange subtotal</td>
+                    <td class="textR" colspan="6">{{item.unUsedTotal}}</td>
+                </tr>
+                <tr>
+                    <td>void subtotal</td>
+                    <td class="textR" colspan="6">{{item.canceledTotal}}</td>
+                </tr>
+                <tr>
+                    <td>overdue subtotal</td>
+                    <td class="textR" colspan="6">{{item.expiredTotal}}</td>
+                </tr>
+                <tr>
+                    <td>gift subtotal</td>
+                    <td class="textR" colspan="6">{{item.passedTotal}}</td>
+                </tr>
+            </table>
+            <button class="optionsBtn" @click="handleOptionsBtn(index)">
+                <span class="material-symbols-outlined">
+                    {{isOptionsBtn[index] ? "expand_more" : "expand_less"}}
+                </span>
+            </button>
+            <contentoptions :data="item" :statusinfos="statusInfos.arr" v-if="isOptionsBtn[index]" />
+        </div>
+    </template>
+
+    <template id="contentoptions">
+        <details>
+            <summary>Please Note</summary>
+            <div v-html="notehtml"></div>
+        </details>
+        <details>
+            <summary>Usage Rules</summary>
+            <div v-html="usagehtml"></div>
+        </details>
+        <details>
+            <summary>Details</summary>
+            <div class="contentoptionsTable">
+                <table>
+                    <tr>
+                        <td>status</td>
+                        <td colspan="2">get date</td>
+                        <td colspan="2">money</td>
+                    </tr>
+                    <tr v-for="(item, index) in details.arr" :key="index">
+                        <td class="borderNone">{{statusInfosData.arr.map(x=>{
+                            return x.statusCode == item.tickets[0].status ? x.statusName : "?"
+                            })[0]}}</td>
+                        <td class="borderNone pointer" colspan="2" @click="handleShowDetails(index)">
+                            {{item.tickets[0].getDatetime.split("T")[0]}}</td>
+                        <td class="borderNone" colspan="2">{{item.money}}</td>
+                    </tr>
+                    <tr>
+                        <td>unused subtotal</td>
+                        <td class="textR" colspan="4">2</td>
+                    </tr>
+                    <tr>
+                        <td>used subtotal</td>
+                        <td class="textR" colspan="4">2</td>
+                    </tr>
+                </table>
+            </div>
+        </details>
+        <details :open="isShowDetails">
+            <summary>Exchange Details</summary>
+            <div>
+                <table v-if="detailsData.obj">
+                    <tr>
+                        <td colspan="5">{{detailsTitle}} Exchange Details</td>
+                    </tr>
+                    <tr>
+                        <td>time</td>
+                        <td>cabinet no.</td>
+                        <td>cabinet name</td>
+                        <td>invoice no.</td>
+                        <td>invoice amount</td>
+                    </tr>
+                    <tr v-for="(item, index) in detailsData.obj.redeemInfos" :key="index">
+                        <td class="borderNone">{{item.consumptionDatetime.split("T")[0]}}</td>
+                        <td class="borderNone">{{item.storeId}}</td>
+                        <td class="borderNone">{{item.storeName}}</td>
+                        <td class="borderNone">{{item.invoiceNo}}</td>
+                        <td class="borderNone">{{item.invoiceAmount}}</td>
+                    </tr>
+
+                    <tr>
+                        <td>invoice amount subtotal</td>
+                        <td class="textR" colspan="4">{{detailsData.obj.consumptionTotalMoney}}</td>
+                    </tr>
+                    <tr>
+                        <td>redeem vouchers</td>
+                        <td class="textR" colspan="4">{{detailsData.obj.redeemInfos.length}}</td>
+                    </tr>
+                </table>
+                <p class="noSearch" v-else>please select the item you want to view in "Details"</p>
+            </div>
+        </details>
+        <details :open="isShowDetails">
+            <summary>Usage Details</summary>
+            <div>
+                <table v-if="detailsData.obj">
+                    <tr>
+                        <td colspan="5">{{detailsTitle}} Usage Details</td>
+                    </tr>
+                    <tr>
+                        <td>time</td>
+                        <td>cabinet no.</td>
+                        <td>cabinet name</td>
+                        <td>invoice no.</td>
+                        <td>invoice amount</td>
+                    </tr>
+                    <tr v-for="(item, index) in detailsData.obj.useInfos" :key="index">
+                        <td class="borderNone">{{item.useDatetime.split("T")[0]}}</td>
+                        <td class="borderNone">{{item.storeId}}</td>
+                        <td class="borderNone">{{item.storeName}}</td>
+                        <td class="borderNone">{{item.invoiceNo}}</td>
+                        <td class="borderNone">{{item.invoiceAmount}}</td>
+                    </tr>
+
+                    <tr>
+                        <td>invoice amount subtotal</td>
+                        <td class="textR" colspan="4">{{detailsData.obj.useInfos.reduce(( acc, cur ) =>
+                            acc.invoiceAmount?acc.invoiceAmount:0 + cur.invoiceAmount?cur.invoiceAmount:0,0)}}</td>
+                    </tr>
+
+                </table>
+                <p class="noSearch" v-else>please select the item you want to view in "Details"</p>
+            </div>
+        </details>
+    </template>
+
+</body>
+<script>
+    const { ref, reactive, computed, onMounted } = Vue;
+
+    const App = Vue.createApp({
+        setup() {
+            const timeTitle = ref("Please select a time range");
+            const startDate = ref(new Date(new Date().getTime() - (1000 * 3 * 30 * 24 * 60 * 60)).toISOString().split('T')[0]);
+            const endDate = ref(new Date().toISOString().split('T')[0]);
+            const voucherData = reactive({ data: null });
+            const contentMainTitle = reactive(["money", "exchange", "used", "void", "overdue", "gift", "remaining"]);
+
+            const handleSearch = () => {
+                voucherData.data = null;
+                const start = Date.parse(new Date(startDate.value));
+                const end = Date.parse(new Date(endDate.value));
+                const usedTime = end - start;
+                if (usedTime <= 0) {
+                    alert('The end time needs to be greater than the start time');
+                    endDate.value = null;
+                    return;
+                }
+
+                voucherData.data = {
+                    "ticketHistApiModel": {
+                        "statusInfos": [
+                            {
+                                "statusName": "UnUsed",
+                                "statusCode": 1,
+                                "statusCName": "可使用"
+                            },
+                            {
+                                "statusName": "Used",
+                                "statusCode": 2,
+                                "statusCName": "已使用"
+                            },
+                            {
+                                "statusName": "Canceled",
+                                "statusCode": 4,
+                                "statusCName": "已作廢"
+                            },
+                            {
+                                "statusName": "Expired",
+                                "statusCode": 5,
+                                "statusCName": "已過期"
+                            },
+                            {
+                                "statusName": "Passed",
+                                "statusCode": 6,
+                                "statusCName": "已轉贈"
+                            }
+                        ],
+                        "totalBalance": 900,
+                        "activities": [
+                            {
+                                "unUsedTotal": 3,
+                                "usedTotal": 0,
+                                "canceledTotal": 0,
+                                "expiredTotal": 0,
+                                "passedTotal": 0,
+                                "activeName": "Future Bank Gift Voucher",
+                                "enddatetime": "2022-12-31T00:00:00",
+                                "ticketCategorys": [
+                                    {
+                                        "categoryId": "A01",
+                                        "title": "Major department store vouchers $900",
+                                        "money": 100,
+                                        "redeemNumber": 1,
+                                        "usedNumber": 0,
+                                        "canceledNumber": 0,
+                                        "expiredNumber": 0,
+                                        "passedNumber": 0,
+                                        "lessNumber": 1,
+                                        "tickets": [
+                                            {
+                                                "status": "1",
+                                                "getDatetime": "2022-12-01T00:00:00",
+                                                "redeemInfos": [
+                                                    {
+                                                        "consumptionDatetime": "2022-12-31T00:00:00",
+                                                        "storeId": "010",
+                                                        "storeName": "STAR",
+                                                        "invoiceId": "",
+                                                        "invoiceNo": "AS031",
+                                                        "invoiceAmount": 34001
+                                                    },
+                                                    {
+                                                        "consumptionDatetime": "2022-12-31T00:00:00",
+                                                        "storeId": "001",
+                                                        "storeName": "CIRCLE",
+                                                        "invoiceId": "",
+                                                        "invoiceNo": "AS032",
+                                                        "invoiceAmount": 34000
+                                                    }
+                                                ],
+                                                "useInfos": [
+                                                    {
+                                                        "useDatetime": "0000-00-00T00:00:00",
+                                                        "storeId": null,
+                                                        "storeName": null,
+                                                        "invoiceId": null,
+                                                        "invoiceNo": null,
+                                                        "invoiceAmount": null
+                                                    }
+                                                ],
+                                                "consumptionTotalMoney": 68001
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "categoryId": "A02",
+                                        "title": "Major department store vouchers $900",
+                                        "money": 500,
+                                        "redeemNumber": 1,
+                                        "usedNumber": 0,
+                                        "canceledNumber": 0,
+                                        "expiredNumber": 0,
+                                        "passedNumber": 0,
+                                        "lessNumber": 1,
+                                        "tickets": [
+                                            {
+                                                "status": "1",
+                                                "getDatetime": "2022-12-02T00:00:00",
+                                                "redeemInfos": [
+                                                    {
+                                                        "consumptionDatetime": "2022-12-31T00:00:00",
+                                                        "storeId": "014",
+                                                        "storeName": "STAR",
+                                                        "invoiceId": "",
+                                                        "invoiceNo": "AS021",
+                                                        "invoiceAmount": 25000
+                                                    },
+                                                    {
+                                                        "consumptionDatetime": "2022-12-31T00:00:00",
+                                                        "storeId": "009",
+                                                        "storeName": "STAR",
+                                                        "invoiceId": "",
+                                                        "invoiceNo": "AS022",
+                                                        "invoiceAmount": 30000
+                                                    }
+                                                ],
+                                                "useInfos": [
+                                                    {
+                                                        "useDatetime": "0000-00-00T00:00:00",
+                                                        "storeId": null,
+                                                        "storeName": null,
+                                                        "invoiceId": null,
+                                                        "invoiceNo": null,
+                                                        "invoiceAmount": null
+                                                    }
+                                                ],
+                                                "consumptionTotalMoney": 55000
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "categoryId": "A03",
+                                        "title": "Major department store vouchers $900",
+                                        "money": 300,
+                                        "redeemNumber": 1,
+                                        "usedNumber": 0,
+                                        "canceledNumber": 0,
+                                        "expiredNumber": 0,
+                                        "passedNumber": 0,
+                                        "lessNumber": 1,
+                                        "tickets": [
+                                            {
+                                                "status": "1",
+                                                "getDatetime": "2022-12-03T00:00:00",
+                                                "redeemInfos": [
+                                                    {
+                                                        "consumptionDatetime": "2022-12-31T00:00:00",
+                                                        "storeId": "009",
+                                                        "storeName": "CIRCLE",
+                                                        "invoiceId": "",
+                                                        "invoiceNo": "AS031",
+                                                        "invoiceAmount": 50500
+                                                    },
+                                                    {
+                                                        "consumptionDatetime": "2022-12-31T00:00:00",
+                                                        "storeId": "027",
+                                                        "storeName": "CIRCLE",
+                                                        "invoiceId": "",
+                                                        "invoiceNo": "AS032",
+                                                        "invoiceAmount": 43233
+                                                    }
+                                                ],
+                                                "useInfos": [
+                                                    {
+                                                        "useDatetime": "0000-00-00T00:00:00",
+                                                        "storeId": null,
+                                                        "storeName": null,
+                                                        "invoiceId": null,
+                                                        "invoiceNo": null,
+                                                        "invoiceAmount": null
+                                                    }
+                                                ],
+                                                "consumptionTotalMoney": 93733
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "subTotal": 3,
+                                "summary": "Gift Information Maintenance (New) Gift Introduction\r\nThis coupon is a product coupon that has already been issued, and no other invoice will be issued. \r\nThe text in this area will be printed on the thermal induction direct printing coupon!!!\r\nThe text in this area will appear on the next page under the i point",
+                                "content": "&lt;html&gt;&lt;head&gt;&lt;title&gt;&lt;/title&gt;&lt;/head&gt;&lt;body&gt;\r\n&lt;p&gt;This is &lt;span style=&quot;font-size: 14pt;&quot; &gt;Gift Information Maintenance (New)&amp;nbsp;&lt;/span&gt;[Gift Description]&lt;/p&gt;\r\n\r\n&lt;p&gt;&lt;span style=&quot;font-size: 16px; font-family: docs-Calibri; white-space: pre-wrap; background-color: rgb(255, 255, 255);&quot;&gt;However, change, exchange for cash and settlement of outstanding balances are not allowed. This coupon does not need to issue an invoice when exchanging goods, and it cannot be included in consumption to exchange for parking coupons, nor can it be used to collect point cards. 2. If this coupon is lost, stolen or lost, it will not be reported or reissued. This coupon is invalid if it is overdue or altered. Forgery of this coupon will be prosecuted according to law. 3. This coupon cannot be exchanged for the following special counter products in Hanshin Department Store and Arena Shopping Plaza: LV boutique, CHANEL boutique, CHANEL jewelry store, Dior boutique, Starbucks stored value, Chaozhiguowu and Mr. Wumei meal coupons, ZARA , H&amp;amp;M, Tibetan Sushi, Haidilao, Tom Bear, , Hanlai Harbor Meal Coupons, Maruka Noodles, Wu Baochun Maifang Store, Hanshin Dome Kenshuo Editing Room. 4. If there is any change to the above counters that cannot be exchanged, please refer to the on-site marking or official website announcement. 5. If you have any questions, please contact the company's service desk and card friend service center. &lt;/span&gt;&lt;/p&gt;\r\n&lt;/body&gt;\r\n&lt;/html&gt;\r\n",
+                                "activityCount": null
+                            },
+
+
+                        ]
+                    }
+                }
+            }
+
+            return {
+                timeTitle,
+                startDate,
+                endDate,
+                voucherData,
+                handleSearch,
+                contentMainTitle
+            }
+        }
+    });
+
+    App.component('contentmain', {
+        template: `#contentmain`,
+        props: {
+            voucherdata: Object,
+            contentmaintitle: Array
+        },
+        setup(props) {
+            const totalBalance = ref(0); // Customer's voucher balance
+            const allData = reactive({ arr: [] });
+            const optionsTitle = reactive({ arr: [] });
+            const statusInfos = reactive({ arr: [] });
+            const isOptionsBtn = reactive([]);
+
+            onMounted(() => {
+                totalBalance.value = props.voucherdata.ticketHistApiModel.totalBalance;
+                allData.arr = props.voucherdata.ticketHistApiModel.activities;
+                optionsTitle.arr = props.contentmaintitle;
+                statusInfos.arr = props.voucherdata.ticketHistApiModel.statusInfos;
+
+                for (let i = 0; i < allData.arr.length; i++) {
+                    isOptionsBtn.push(false);
+                }
+
+            });
+
+            const handleOptionsBtn = (index) => {
+                isOptionsBtn[index] = !isOptionsBtn[index];
+            }
+
+            return {
+                totalBalance,
+                allData,
+                optionsTitle,
+                isOptionsBtn,
+                handleOptionsBtn,
+                statusInfos,
+            }
+        }
+    });
+
+    App.component('contentoptions', {
+        template: `#contentoptions`,
+        props: {
+            data: Object,
+            statusinfos: Array
+        },
+        setup(props) {
+            const notehtml = ref("");
+            const usagehtml = ref("");
+            const isShowDetails = ref(false);
+            const details = reactive({ arr: null });
+            const statusInfosData = reactive({ arr: null });
+            const detailsTitle = ref("");
+            const detailsData = reactive({ obj: null });
+
+
+            onMounted(() => {
+                notehtml.value = new DOMParser().parseFromString(props.data.content, "text/html").documentElement.textContent;
+                usagehtml.value = new DOMParser().parseFromString(props.data.summary, "text/html").documentElement.textContent;
+                details.arr = props.data.ticketCategorys;
+                statusInfosData.arr = props.statusinfos;
+            });
+
+            const handleShowDetails = (index) => {
+                detailsData.obj = props.data.ticketCategorys[index].tickets[0];
+                detailsTitle.value = `${props.data.ticketCategorys[index].tickets[0].getDatetime.split("T")[0]} ${props.data.activeName}`;
+                isShowDetails.value = true;
+            }
+            return {
+                notehtml,
+                usagehtml,
+                details,
+                statusInfosData,
+                handleShowDetails,
+                isShowDetails,
+                detailsData,
+                detailsTitle
+            }
+        }
+    });
+
+    App.mount('#app')
+</script>
+
+</html>
