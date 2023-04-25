@@ -7,11 +7,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TableList</title>
     <style>
-        #app{
+        #app {
             width: 95%;
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
         }
+
         table,
         tr,
         td {
@@ -39,6 +40,7 @@
 
         input[type="text"] {
             width: 80%;
+            padding: 5px 8px;
             border: 1px solid white;
             background: none;
         }
@@ -51,7 +53,7 @@
             margin: 50px 0;
         }
     </style>
-<script src="https://unpkg.com/vue@3"></script>
+    <script src="https://unpkg.com/vue@3"></script>
 </head>
 
 <body>
@@ -79,7 +81,6 @@
             <tr v-for="(item, index) in data_arr.arr" :key="index">
                 <td>{{ index + 1 }}</td>
                 <td v-for="(con, index_list) in item.list" :key="index_list">
-                    <span>&nbsp;&nbsp;&nbsp;</span>
                     <input type="text" v-model="con.name" @blur="save_con(index, index_list, con.name)" />
                 </td>
                 <td @click="add_data(index)" title="add row"><span>+</span></td>
@@ -121,8 +122,6 @@
             });
 
             const showTable = ref("");
-            // onMounted(() => {
-            // })
 
             // 新增資料
             const add_data = (index) => {
@@ -140,7 +139,7 @@
             const add_column = () => {
                 data_title.arr.splice(data_title.arr.length - 2, 0, { val: "List" });
                 data_arr.arr.forEach((element) => {
-                    element.list.push({});
+                    element.list.push({ name: "" });
                 });
             };
 
@@ -202,7 +201,7 @@
                 data_arr.arr.forEach((item) => {
                     html += `<tr>`;
                     item.list.forEach((elemet) => {
-                        html += `<td>${elemet.name}</td>`;
+                        html += `<td>${elemet.name == "" ? "&nbsp;&nbsp;&nbsp;" : elemet.name}</td>`;
                     });
                     html += `</tr>`;
                 });
